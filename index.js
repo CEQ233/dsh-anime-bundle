@@ -897,23 +897,45 @@ function createApi(ctx, state) {
         return
       }
       for (const target of targets) {
-        job.current = target.entry.name
+        const name = target.entry.name
+        const current = (map.get(name) || {}).version
+        job.current = name
         job.phase = 'update'
         try {
-          const result = await ctx.pluginManager.installBundle(`${target.entry.name}@${target.latest}`, {
+          /* DSH 的 installBundle 只负责「新增」：包已经在这个 profile 的 dependencies 里时，
+             宿主会抛 already-installed（桌面端常驻 HMR，必走这条）。官方 UI 的更新路径是
+             「先卸载，再安装」，这里照做；装新版本失败就把旧版本装回去，别把人家的插件弄丢。 */
+          await ctx.pluginManager.removeBundle(name)
+          const result = await ctx.pluginManager.installBundle(`${name}@${target.latest}`, {
             enabled: target.enabled,
             saveExact: true,
-            requestId: `${job.id}-${target.entry.name}`,
+            requestId: `${job.id}-${name}`,
           })
           const ok = Boolean(result) && result.application !== 'failed' && !result.error
           pushResult(job, {
-            name: target.entry.name,
+            name,
             ok,
             message: ok ? `已更新到 ${target.latest}` : describeChange(result),
           })
+          if (!ok && current) {
+            try {
+              await ctx.pluginManager.installBundle(`${name}@${current}`, {
+                enabled: target.enabled,
+                saveExact: true,
+                requestId: `${job.id}-${name}-rollback`,
+              })
+              pushResult(job, { name, ok: false, message: `已回滚到 ${current}` })
+            } catch (rollbackError) {
+              pushResult(job, {
+                name,
+                ok: false,
+                message: `回滚失败，请到「设置 → 插件」重装：${String((rollbackError && rollbackError.message) || rollbackError)}`,
+              })
+            }
+          }
         } catch (error) {
           pushResult(job, {
-            name: target.entry.name,
+            name,
             ok: false,
             message: String((error && error.message) || error),
           })
