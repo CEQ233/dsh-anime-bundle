@@ -73,6 +73,21 @@ window.__ModuleLoader__.load({
       addedGroupMode: '二次元外观',
       addedGroupUtil: '功能插件',
       resetDone: '已恢复默认清单。',
+      selfTitle: '插件本体',
+      selfDesc: '检查 dsh-anime-bundle 在 npm 上有没有新版本。',
+      selfCheck: '检查本体更新',
+      selfUpToDate: '已是最新',
+      selfNewer: '可更新 {v}',
+      selfCurrent: '当前 v{v}',
+      selfLatest: '最新 v{v}',
+      selfNever: '还没检查过本体更新',
+      selfLast: '上次检查：{time}',
+      selfNoCheck: '未检查',
+      selfFound: '发现本体新版本 v{v}（当前 v{c}）。',
+      selfLatestMsg: '本体已是最新 v{v}。',
+      selfHint: '更新方法：设置 → 插件 → 卸载 dsh-anime-bundle 后重装；或命令行 dsh plugin remove dsh-anime-bundle 再 dsh plugin add dsh-anime-bundle@latest。',
+      githubLink: 'GitHub 仓库',
+      npmLink: 'npm 页面',
       confirmDisableAll: '这会停用清单里的所有插件（包括记忆、MCP 面板）。确定吗？',
       jobModeOn: '正在开启大肥鱼模式',
       jobModeOff: '正在关闭大肥鱼模式',
@@ -108,7 +123,7 @@ window.__ModuleLoader__.load({
       noticeTitle: '完成',
       dismiss: '知道了',
       progress: '{done}/{total}',
-      footer: 'dsh-anime-bundle v1.0.0 · 所有开关即时保存，改完不用重启',
+      footer: 'dsh-anime-bundle v{v} · 所有开关即时保存，改完不用重启',
       autoNote: '人格来自插件内置文案，可在 persona.js 里换成你自己的。',
       busy: '有任务在跑，先等它结束。',
       phaseEnable: '启用',
@@ -174,6 +189,21 @@ window.__ModuleLoader__.load({
       addedGroupMode: 'visuals',
       addedGroupUtil: 'utilities',
       resetDone: 'Default list restored.',
+      selfTitle: 'This plugin',
+      selfDesc: 'Check npm for a newer version of dsh-anime-bundle.',
+      selfCheck: 'Check plugin update',
+      selfUpToDate: 'Up to date',
+      selfNewer: 'Update {v}',
+      selfCurrent: 'Current v{v}',
+      selfLatest: 'Latest v{v}',
+      selfNever: 'Never checked this plugin for updates',
+      selfLast: 'Last check: {time}',
+      selfNoCheck: 'Not checked',
+      selfFound: 'A newer version v{v} is available (current v{c}).',
+      selfLatestMsg: 'This plugin is up to date at v{v}.',
+      selfHint: 'To update: Settings → Plugins → remove dsh-anime-bundle, then reinstall; or run dsh plugin remove dsh-anime-bundle followed by dsh plugin add dsh-anime-bundle@latest.',
+      githubLink: 'GitHub repo',
+      npmLink: 'npm page',
       confirmDisableAll: 'This disables every plugin in the list, including memory and the MCP panel. Continue?',
       jobModeOn: 'Turning Big Fish Mode on',
       jobModeOff: 'Turning Big Fish Mode off',
@@ -209,7 +239,7 @@ window.__ModuleLoader__.load({
       noticeTitle: 'Done',
       dismiss: 'Got it',
       progress: '{done}/{total}',
-      footer: 'dsh-anime-bundle v1.0.0 · every switch saves immediately, no restart needed',
+      footer: 'dsh-anime-bundle v{v} · every switch saves immediately, no restart needed',
       autoNote: 'The persona ships in persona.js — edit it to make the fish sound like yours.',
       busy: 'A task is running. Wait for it to finish.',
       phaseEnable: 'Enable',
@@ -302,6 +332,11 @@ window.__ModuleLoader__.load({
 .dfm-details summary { cursor: pointer; font-size: 12px; color: var(--dsw-alias-label-secondary); user-select: none; }
 .dfm-details summary:hover { color: var(--dsw-alias-label-primary); }
 .dfm-persona-text { margin: 8px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--dsw-alias-bg-layer-2); border: 1px solid var(--dsw-alias-border-l1); font-size: 12px; color: var(--dsw-alias-label-secondary); white-space: pre-wrap; max-height: 220px; overflow: auto; }
+.dfm-self { margin-top: 14px; }
+.dfm-self-version { font-size: 12px; color: var(--dsw-alias-label-secondary); }
+.dfm-self-links { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 8px; font-size: 11.5px; }
+.dfm-self-links a { color: var(--dsw-alias-brand-primary); text-decoration: none; }
+.dfm-self-links a:hover { text-decoration: underline; }
 .dfm-foot { margin-top: 18px; font-size: 11px; color: var(--dsw-alias-label-secondary); text-align: center; }
 .dfm-loading { padding: 40px 0; text-align: center; color: var(--dsw-alias-label-secondary); font-size: 12.5px; }
 @media (max-width: 560px) { .dfm-hero { align-items: flex-start; } .dfm-tag { display: none; } .dfm-section-head--row { flex-direction: column; align-items: stretch; } .dfm-section-tools { justify-content: flex-end; } }
@@ -775,6 +810,17 @@ window.__ModuleLoader__.load({
         await post('/action', { action: 'set-mode', enabled: true })
       }, [post])
 
+      const checkSelf = useCallback(async () => {
+        const payload = await post('/action', { action: 'check-self-update' })
+        if (!payload || !payload.result) return
+        const result = payload.result
+        showNotice(
+          result.newer
+            ? fmt(t('selfFound'), { v: result.latest, c: result.current })
+            : fmt(t('selfLatestMsg'), { v: result.latest }),
+        )
+      }, [post, showNotice, t])
+
       if (!data) {
         return h(
           'div',
@@ -798,6 +844,15 @@ window.__ModuleLoader__.load({
         : t('modeDescOff')
       const modeRows = data.plugins.filter((row) => row.group === 'mode')
       const utilRows = data.plugins.filter((row) => row.group === 'util')
+      const selfInfo = data.self || {
+        name: 'dsh-anime-bundle',
+        version: '?',
+        latest: null,
+        checkedAt: 0,
+        newer: false,
+        repoUrl: null,
+        npmUrl: 'https://www.npmjs.com/package/dsh-anime-bundle',
+      }
       const lastCheck = data.updates.checkedAt
         ? fmt(t('lastCheckAt'), { time: timeText(data.updates.checkedAt) })
         : t('lastCheckNever')
@@ -981,7 +1036,74 @@ window.__ModuleLoader__.load({
           }))),
         ),
 
-        h('div', { className: 'dfm-foot' }, t('footer')),
+        h(
+          'section',
+          { className: 'dfm-card dfm-self' },
+          h(
+            'div',
+            { className: 'dfm-mode-head' },
+            h(
+              'div',
+              { className: 'dfm-mode-text' },
+              h(
+                'div',
+                { className: 'dfm-card-title' },
+                t('selfTitle'),
+                ' ',
+                h('span', { className: 'dfm-pkg' }, selfInfo.name),
+              ),
+              h('div', { className: 'dfm-muted' }, t('selfDesc')),
+            ),
+            h(
+              'button',
+              { type: 'button', className: 'dfm-btn', disabled: busy, onClick: checkSelf },
+              t('selfCheck'),
+            ),
+          ),
+          h(
+            'div',
+            { className: 'dfm-mode-meta' },
+            h(
+              Badge,
+              { tone: selfInfo.newer ? 'update' : selfInfo.latest ? 'on' : undefined },
+              selfInfo.newer
+                ? fmt(t('selfNewer'), { v: selfInfo.latest })
+                : selfInfo.latest
+                  ? t('selfUpToDate')
+                  : t('selfNoCheck'),
+            ),
+            h('span', { className: 'dfm-self-version' }, fmt(t('selfCurrent'), { v: selfInfo.version })),
+            selfInfo.latest
+              ? h('span', { className: 'dfm-self-version' }, fmt(t('selfLatest'), { v: selfInfo.latest }))
+              : null,
+            h(
+              'span',
+              { className: 'dfm-count' },
+              selfInfo.checkedAt
+                ? fmt(t('selfLast'), { time: timeText(selfInfo.checkedAt) })
+                : t('selfNever'),
+            ),
+          ),
+          selfInfo.newer ? h('div', { className: 'dfm-note', style: { marginTop: '8px' } }, t('selfHint')) : null,
+          h(
+            'div',
+            { className: 'dfm-self-links' },
+            selfInfo.repoUrl
+              ? h(
+                  'a',
+                  { href: selfInfo.repoUrl, target: '_blank', rel: 'noreferrer' },
+                  `${t('githubLink')} ↗`,
+                )
+              : null,
+            h(
+              'a',
+              { href: selfInfo.npmUrl, target: '_blank', rel: 'noreferrer' },
+              `${t('npmLink')} ↗`,
+            ),
+          ),
+        ),
+
+        h('div', { className: 'dfm-foot' }, fmt(t('footer'), { v: selfInfo.version })),
       )
     }
 

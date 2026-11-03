@@ -13,6 +13,7 @@
 - **添加 / 移除插件**：「添加插件」列出**已安装但不在清单里**的第三方插件，可加入外观或功能组；每行的 `×` 只把条目从清单移除，**不卸载、不改开关**；「恢复默认清单」一键还原。
 - **一键下载缺失**：按清单里的锁定版本把缺的插件装回来，并把原本开着的重新打开。
 - **检查更新 / 更新全部**：走 npm 仓库比对最新版；更新时按 DSH 官方路径「先卸载、再安装」（宿主 `installBundle` 只用于新增，已在 profile 里的包会被拒绝），安装失败自动把旧版本装回去。
+- **插件本体更新**：设置页底部显示本插件当前版本，一键比对 npm 上的 `latest`，附 GitHub / npm 链接；主「检查更新」也会顺带查一次本体。不会在运行中替换自身，更新走「设置 → 插件」卸载后重装。
 - **自检**：提示词、状态文件、插件清单各查一遍，结果直接显示在页面上。
 
 ## 安装
@@ -65,12 +66,27 @@ dsh plugin --profile desktop add "link:<克隆下来的目录>"
 > 文件名的 `dafy-mode` 是历史遗留标识（与内部路由 `/dafy-mode/*` 一起保留），为了从早期版本升级时不丢设置。
 > 包名、设置页显示名与它的含义无关。
 
+## 本体更新
+
+设置页底部「插件本体」显示的是**当前正在运行的** `package.json` 版本；点「检查本体更新」会去 npm 取
+`dsh-anime-bundle@latest` 比对。有新版本时给出版本号、GitHub 与 npm 链接。
+
+本插件不会在运行中把自己卸载重装（那会先把提供这个页面的插件卸载掉）。更新请走官方路径：
+**设置 → 插件 → 卸载 `dsh-anime-bundle` → 重新添加**，或命令行：
+
+```bash
+dsh plugin --profile <profile> remove dsh-anime-bundle
+dsh plugin --profile <profile> add dsh-anime-bundle@latest
+```
+
+上面的主「检查更新」也会顺带查一次本体，结果里会出现一条 `dsh-anime-bundle（本体）`。
+
 ## 它做了什么（安全说明）
 
 - 所有开关都走 DSH 官方的插件管理路径（`pluginManager.setBundleEnabled`），和「设置 → 插件」按钮等价。
 - 「一键下载缺失 / 更新全部」会让宿主用 pnpm 从 `registry.npmjs.org`（或你配置的镜像）安装清单里的包，
   安装内容完全由清单决定；不会执行清单以外的下载。
-- Host 侧只读写 `~/.dsh/dafy-mode.json`，不访问网络、不收集任何数据。
+- Host 侧只读写 `~/.dsh/dafy-mode.json`；只有你点「检查更新 / 检查本体更新」时才会访问 npm registry（`registry.npmjs.org` 或你配置的镜像），不收集任何数据。
 
 ## 开发
 
@@ -95,7 +111,9 @@ MIT（只覆盖本插件自己的代码与文案）。
 
 A settings page that treats your anime skin stack as one switch: toggle the whole look, flip a
 persona prompt on/off, see every managed plugin's version, reinstall what's missing, and check for
-updates — all through DSH's own plugin-manager APIs.
+updates — all through DSH's own plugin-manager APIs. The page also shows its own version and checks
+npm for a newer `dsh-anime-bundle`; it never replaces itself while running, so update it from
+**Settings → Plugins** (remove, then reinstall).
 
 **Unofficial.** Not affiliated with or endorsed by DeepSeek, DSH, or the authors of the plugins in
 the default list (`dafy-whale-theme`, `dsh-boot-suite`, the whale skins). Those packages keep their

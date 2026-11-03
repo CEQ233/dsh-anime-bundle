@@ -7,9 +7,10 @@
  *  3. 用 ctx.systemPrompt.section 注入「大肥鱼人格」，开 / 关都不需要重启。
  */
 import { randomUUID } from 'node:crypto'
-import { promises as fsp } from 'node:fs'
+import { promises as fsp, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { MANAGED } from './catalog.js'
 import { PERSONA_PREVIEW, PERSONA_TEXT } from './persona.js'
 
@@ -24,6 +25,30 @@ const STATE_FILE = join(DSH_HOME, 'dafy-mode.json')
 const VERIFY_ROUNDS = 3
 const CATALOG_NAMES = new Set(MANAGED.map((entry) => entry.name))
 
+/** 本插件自己的清单：用来显示本体版本、仓库和 npm 页面。 */
+const PACKAGE_ROOT = dirname(fileURLToPath(import.meta.url))
+const SELF_MANIFEST = readSelfManifest()
+const SELF_PACKAGE = typeof SELF_MANIFEST.name === 'string' && SELF_MANIFEST.name ? SELF_MANIFEST.name : SELF_NAME
+const SELF_VERSION = typeof SELF_MANIFEST.version === 'string' && SELF_MANIFEST.version ? SELF_MANIFEST.version : '0.0.0'
+const SELF_REPO_URL = normalizeRepoUrl(SELF_MANIFEST.repository)
+const SELF_NPM_URL = `https://www.npmjs.com/package/${SELF_PACKAGE}`
+
+function readSelfManifest() {
+  try {
+    return JSON.parse(readFileSync(join(PACKAGE_ROOT, 'package.json'), 'utf8'))
+  } catch {
+    return {}
+  }
+}
+
+function normalizeRepoUrl(repository) {
+  const raw = typeof repository === 'string' ? repository : repository && repository.url
+  if (typeof raw !== 'string' || !raw.trim()) return null
+  let url = raw.trim().replace(/^git\+/, '').replace(/\.git$/, '')
+  if (url.startsWith('git@github.com:')) url = `https://github.com/${url.slice('git@github.com:'.length)}`
+  return /^https?:\/\//.test(url) ? url : null
+}
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 function defaultState() {
@@ -37,6 +62,7 @@ function defaultState() {
     registry: null,
     added: [],
     removed: [],
+    selfUpdate: null,
   }
 }
 
@@ -146,6 +172,12 @@ async function loadState() {
       registry: typeof parsed.registry === 'string' ? parsed.registry : null,
       added,
       removed,
+      selfUpdate: parsed.selfUpdate && typeof parsed.selfUpdate === 'object'
+        ? {
+            latest: typeof parsed.selfUpdate.latest === 'string' ? parsed.selfUpdate.latest : null,
+            checkedAt: Number(parsed.selfUpdate.checkedAt) || 0,
+          }
+        : null,
     }
   } catch (error) {
     if (error && error.code !== 'ENOENT') {
@@ -272,6 +304,7 @@ function createApi(ctx, state) {
           registry: state.registry,
           added: state.added,
           removed: state.removed,
+          selfUpdate: state.selfUpdate,
         },
         null,
         2,
@@ -403,6 +436,17 @@ function createApi(ctx, state) {
         preview: PERSONA_PREVIEW,
         text: PERSONA_TEXT,
         chars: PERSONA_TEXT.length,
+      },
+      self: {
+        name: SELF_PACKAGE,
+        version: SELF_VERSION,
+        latest: state.selfUpdate && state.selfUpdate.latest ? state.selfUpdate.latest : null,
+        checkedAt: state.selfUpdate && state.selfUpdate.checkedAt ? state.selfUpdate.checkedAt : 0,
+        newer: Boolean(
+          state.selfUpdate && state.selfUpdate.latest && isNewer(state.selfUpdate.latest, SELF_VERSION),
+        ),
+        repoUrl: SELF_REPO_URL,
+        npmUrl: SELF_NPM_URL,
       },
       plugins,
       available,
@@ -657,6 +701,12 @@ function createApi(ctx, state) {
       checks.push({ id: 'persona', ok: false, message: `提示词自检失败：${String((error && error.message) || error)}` })
     }
 
+    checks.push({
+      id: 'self',
+      ok: Boolean(SELF_PACKAGE && SELF_VERSION),
+      message: `本体 ${SELF_PACKAGE}@${SELF_VERSION}`,
+    })
+
     try {
       const raw = await fsp.readFile(STATE_FILE, 'utf8')
       const saved = JSON.parse(raw)
@@ -687,6 +737,25 @@ function createApi(ctx, state) {
 
     const passed = checks.filter((check) => check.ok).length
     return { ok: passed === checks.length, checks, passed, total: checks.length }
+  }
+
+  /** 检查插件本体：拿本地 package.json 的版本和 npm 上的 latest 比。 */
+  async function actionCheckSelf() {
+    const registry = await resolveRegistry()
+    const latest = await fetchLatest(registry, SELF_PACKAGE)
+    state.selfUpdate = { latest, checkedAt: Date.now() }
+    await persist()
+    return {
+      ok: true,
+      name: SELF_PACKAGE,
+      current: SELF_VERSION,
+      latest,
+      newer: isNewer(latest, SELF_VERSION),
+      checkedAt: state.selfUpdate.checkedAt,
+      registry,
+      repoUrl: SELF_REPO_URL,
+      npmUrl: SELF_NPM_URL,
+    }
   }
 
   /* ---------------- 任务入口 ---------------- */
@@ -832,11 +901,11 @@ function createApi(ctx, state) {
 
   function startCheckUpdates() {
     const npmEntries = effectiveEntries(state).filter((entry) => entry.kind === 'npm')
-    return startJob('check', npmEntries.length, async (job) => {
+    return startJob('check', npmEntries.length + 1, async (job) => {
       const registry = await resolveRegistry()
       state.registry = registry
       const map = await listBundleMap()
-      job.total = npmEntries.length
+      job.total = npmEntries.length + 1
       for (const entry of npmEntries) {
         job.current = entry.name
         job.phase = 'check'
@@ -861,6 +930,29 @@ function createApi(ctx, state) {
             message: `查询失败：${String((error && error.message) || error)}`,
           })
         }
+      }
+      // 顺手把插件本体也查一遍，主「检查更新」一次看全。
+      job.current = SELF_PACKAGE
+      job.phase = 'check'
+      try {
+        const latest = await fetchLatest(registry, SELF_PACKAGE)
+        state.selfUpdate = { latest, checkedAt: Date.now() }
+        const newer = isNewer(latest, SELF_VERSION)
+        pushResult(job, {
+          name: `${SELF_PACKAGE}（本体）`,
+          ok: true,
+          message: newer ? `可更新：${SELF_VERSION} → ${latest}` : `已是最新 ${latest}`,
+          latest,
+          current: SELF_VERSION,
+          newer,
+          self: true,
+        })
+      } catch (error) {
+        pushResult(job, {
+          name: `${SELF_PACKAGE}（本体）`,
+          ok: false,
+          message: `查询失败：${String((error && error.message) || error)}`,
+        })
       }
       state.checkedAt = Date.now()
       await persist()
@@ -1032,6 +1124,19 @@ function createApi(ctx, state) {
         if (action === 'install-missing') {
           const started = startInstallMissing()
           sendJson(res, started.ok ? 200 : 409, { ...started, state: await buildState() })
+          return
+        }
+        if (action === 'check-self-update') {
+          try {
+            const result = await actionCheckSelf()
+            sendJson(res, 200, { ok: true, result, state: await buildState() })
+          } catch (error) {
+            sendJson(res, 200, {
+              ok: false,
+              error: `检查本体更新失败：${String((error && error.message) || error)}`,
+              state: await buildState(),
+            })
+          }
           return
         }
         if (action === 'check-updates') {
