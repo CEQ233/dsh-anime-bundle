@@ -1,0 +1,4 @@
+# 二次元大肥鱼模式：一个设置页 + 一个 Host 路由，管住整套插件。
+- insert:
+    - id: dsh-anime-bundle
+      name: 'dsh-anime-bundle'

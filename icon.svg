@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Anime Big Fish">
+  <defs>
+    <linearGradient id="dfmBody" x1="10" y1="14" x2="54" y2="52" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7FA3FF"/>
+      <stop offset="0.55" stop-color="#4C74F5"/>
+      <stop offset="1" stop-color="#2F4FD8"/>
+    </linearGradient>
+    <linearGradient id="dfmBelly" x1="24" y1="36" x2="46" y2="52" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#EAF0FF"/>
+      <stop offset="1" stop-color="#B9CBFF"/>
+    </linearGradient>
+  </defs>
+  <!-- 尾鳍 -->
+  <path d="M13 31c-4-5-7-9-7-9s6-1 10 1c3 2 4 6 4 6s-1 4-4 6c-4 2-10 1-10 1s3-4 7-5z" fill="#3E63E8" opacity="0.95"/>
+  <!-- 身体：圆滚滚的大肥鱼 -->
+  <path d="M16 30c0-9 8-16 20-16 13 0 21 7 21 17 0 11-9 18-21 18-12 0-20-8-20-19z" fill="url(#dfmBody)"/>
+  <!-- 肚子 -->
+  <path d="M22 38c3 6 8 9 15 9 8 0 14-4 17-10-3 8-9 12-17 12-8 0-13-4-15-11z" fill="url(#dfmBelly)" opacity="0.9"/>
+  <!-- 背鳍 -->
+  <path d="M31 14c2-4 5-6 8-5 2 1 2 4 1 7-2-2-5-2-9-2z" fill="#3356E0"/>
+  <!-- 下鳍 -->
+  <path d="M33 47c1 4 3 6 6 6 2 0 3-2 3-4-3 1-6 0-9-2z" fill="#3356E0"/>
+  <!-- 胸鳍 -->
+  <path d="M35 33c3 1 5 3 5 6 0 2-2 3-4 2-2-1-3-4-3-6z" fill="#2F4FD8" opacity="0.85"/>
+  <!-- 眼睛 -->
+  <circle cx="46" cy="28" r="4.6" fill="#FFFFFF"/>
+  <circle cx="46.8" cy="28.4" r="2.5" fill="#12224F"/>
+  <circle cx="47.7" cy="27.2" r="1" fill="#FFFFFF"/>
+  <!-- 腮红 -->
+  <ellipse cx="41" cy="35" rx="3.4" ry="2.2" fill="#FF9BB5" opacity="0.75"/>
+  <!-- 气泡 -->
+  <circle cx="19" cy="17" r="2.4" fill="#CFE0FF" opacity="0.85"/>
+  <circle cx="13" cy="23" r="1.5" fill="#CFE0FF" opacity="0.7"/>
+  <circle cx="24" cy="10" r="1.3" fill="#CFE0FF" opacity="0.6"/>
+</svg>
