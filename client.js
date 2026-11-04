@@ -446,6 +446,7 @@ window.__ModuleLoader__.load({
       if (row.incompatible) parts.push(h(Badge, { key: 'bad', tone: 'warn' }, t('incompatible')))
       if (row.custom) parts.push(h(Badge, { key: 'custom' }, t('customBadge')))
       if (row.kind === 'link') parts.push(h(Badge, { key: 'link' }, t('linkBadge')))
+      if (row.kind === 'github') parts.push(h(Badge, { key: 'gh' }, 'GitHub'))
       if (row.update && row.update.newer) {
         parts.push(h(Badge, { key: 'upd', tone: 'update' }, fmt(t('updateTo'), { v: row.update.latest })))
       }

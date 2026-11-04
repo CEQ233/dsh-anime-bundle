@@ -4,8 +4,9 @@
  * 这里只负责开箱默认值，不用为了增删改代码。
  *
  * kind:
- *   - npm  ：走 npm 仓库安装，pin 是装回来时锁定的版本（保证"一键下载"复刻现在的组合）
- *   - link ：本机目录 link 安装，装不回来时给出明确提示
+ *   - npm   ：走 npm 仓库安装，pin 是装回来时锁定的版本（保证"一键下载"复刻现在的组合）
+ *   - link  ：本机目录 link 安装，装不回来时给出明确提示
+ *   - github：走 GitHub 仓库安装，spec 是 pnpm 的 git 形式（本机需要可用的 git）
  * group:
  *   - mode ：二次元外观，归"大肥鱼模式"总开关管
  *   - util ：功能插件，只做单独开关，不随总开关走
@@ -35,8 +36,17 @@ export const MANAGED = [
     note: '六幕开机动画、模板与聊天壁纸',
     group: 'mode',
     kind: 'npm',
-    pin: '2.16.2',
+    pin: '2.16.5',
     defaultEnabled: true,
+  },
+  {
+    name: 'dsh-splash-animation',
+    title: '开屏动画',
+    note: '启动时播放视频再渐隐；和「开机动画套件」的开场二选一，默认关闭',
+    group: 'mode',
+    kind: 'github',
+    spec: 'github:KDDKBD/DeepSeek-splash-animation',
+    defaultEnabled: false,
   },
   {
     name: '@smalltailqwq/dsh-client-ui-skin-deep-whale-manager',

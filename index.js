@@ -838,8 +838,10 @@ function createApi(ctx, state) {
       for (const entry of missing) {
         job.current = entry.name
         job.phase = 'install'
-        let spec = entry.kind === 'link' ? `link:${entry.linkPath}` : entry.name
-        if (entry.kind === 'npm' && entry.pin) spec = `${entry.name}@${entry.pin}`
+        let spec = entry.name
+        if (entry.kind === 'link') spec = `link:${entry.linkPath}`
+        else if (entry.kind === 'github') spec = entry.spec || entry.name
+        else if (entry.pin) spec = `${entry.name}@${entry.pin}`
         if (entry.kind === 'link') {
           let exists = true
           try {
