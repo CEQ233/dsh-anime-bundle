@@ -1,5 +1,5 @@
 /**
- * 「大肥鱼模式」的默认插件清单（发布时的默认组合）。
+ * 「大肥鱼模式」的默认插件清单（pin 为 2026-11-23 的快照）。
  * 设置页可以运行期增删：增删记录存在 ~/.dsh/dafy-mode.json 的 added / removed，
  * 这里只负责开箱默认值，不用为了增删改代码。
  *
@@ -36,7 +36,7 @@ export const MANAGED = [
     note: '六幕开机动画、模板与聊天壁纸',
     group: 'mode',
     kind: 'npm',
-    pin: '2.16.5',
+    pin: '2.16.13',
     defaultEnabled: true,
   },
   {
@@ -54,7 +54,7 @@ export const MANAGED = [
     note: '切换已装皮肤、调每套皮肤自己的选项',
     group: 'mode',
     kind: 'npm',
-    pin: '0.1.8',
+    pin: '0.1.11',
     defaultEnabled: true,
   },
   {
@@ -63,7 +63,7 @@ export const MANAGED = [
     note: '双女仆皮肤',
     group: 'mode',
     kind: 'npm',
-    pin: '0.1.9',
+    pin: '0.1.12',
     defaultEnabled: true,
   },
   {
@@ -72,7 +72,16 @@ export const MANAGED = [
     note: '长期记忆、文档检索与热记忆注入',
     group: 'util',
     kind: 'npm',
-    pin: '0.5.39',
+    pin: '0.5.53',
+    defaultEnabled: true,
+  },
+  {
+    name: 'dsh-context',
+    title: 'Context 上下文面板',
+    note: '查看上下文由什么组成、怎么变化，带上下文面板与命令',
+    group: 'util',
+    kind: 'npm',
+    pin: '0.87.1',
     defaultEnabled: true,
   },
   {
@@ -90,7 +99,7 @@ export const MANAGED = [
     note: 'MCP 服务器的安装、探活与工具调用',
     group: 'util',
     kind: 'npm',
-    pin: '0.6.29',
+    pin: '0.6.35',
     defaultEnabled: true,
   },
 ]
